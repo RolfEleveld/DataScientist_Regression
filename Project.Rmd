@@ -1,0 +1,67 @@
+---
+title: "MPG analysis for cars"
+author: "Rolf Eleveld"
+date: "Friday, June 19, 2015"
+output: word_document
+---
+
+#Motor Trend
+
+Analyis of Mile Per Gallon (MPG) usage on the basis of Transmission type
+
+##Summary
+
+Analysis of the consumption behavior of new cars in 1974, based on Transmission type. We find that an automatic transmission car this year uses almost 7 1/4 Gallon more per mile on average than a manual transission. But do note that that is caused by other factors contributing such as engine size, weight and number of cylinders in the cars that happen to be automatic. 
+
+##Data Analysis
+
+Trying to answer correlations in all variables in the car data collected.
+
+```{r echo=FALSE, fig.height=5,fig.width=8}
+set.seed(98761)
+data(mtcars)
+pairs(mtcars)
+```
+
+As you can see there are several categories that are influencing the MPG metric very clearly, lets look at the level at which all variables correlate using a linear model using the mpg as the outcome for all regressors. It appears that there is some separation in the transmission types (am) and MPG, but not very evident, there are no clear outliers in the graph. Let's see the Variance Inflation Factors (VIF)for each variable, telling which ones have most influence on the variance if they were omitted.
+
+```{r echo=FALSE}
+fit<-lm(mpg~.,data=mtcars)
+library(car)
+sqrt(vif(fit))
+```
+
+As we can see the displacement (engine size) has most influence, then a close call between weight and number of cylinders. Transmission type is before rear axle ratio (drat) having the least influence. Since we are keen to understand only the Transmission type, let's take that out, and then slice the residuals up by other factors that may have more influence.    
+
+##Is an automatic or manual transmission better for MPG
+
+Lets see the influence of the transmission type (am) as a regressor for the outcome MPG.
+
+```{r echo=FALSE, fig.height=3,fig.width=4}
+fit_am<-lm(mpg~am,data=mtcars)
+round(summary(fit_am)$coef,4)
+plot(predict(fit_am),resid(fit_am), pch=21, col=c("salmon","blue")[mtcars$am+1])
+```
+
+The table shows a clear relation of on average 7.2449 ± 1.7644 mpg less for a manual transmission car than for an automatic transmission car (automatic is 1 and manual is 0). this has a low enough p-value to be significant with a fairly ok t-value. The plot showing the predicted values versus the residuals supports this finding, showing a relative normal spread of values without direct aparent pattern.
+
+##Notes
+
+The transmission type is a boolean type distribution is not normal, given there are just a few cars involved in the research. Doing more in depth analysis would render the relationships as follows.
+
+```{r echo=FALSE, fig.height=3,fig.width=4}
+fit_disp<-lm(mpg~disp,data=mtcars)
+fit_disp_wt_cyl<-lm(mpg~disp+wt+cyl,data=mtcars)
+fit_disp_wt_cyl_am<-lm(mpg~disp+wt+cyl+am,data=mtcars)
+anova(fit_disp,fit_disp_wt_cyl,fit_disp_wt_cyl_am)
+par(mfrow=c(1,3), mar=c(2,4,0.1,0.1))
+plot(predict(fit_disp),resid(fit_disp), pch=21, col=c("salmon","blue")[mtcars$am+1])
+plot(predict(fit_disp_wt_cyl),resid(fit_disp_wt_cyl), pch=21, col=c("salmon","blue")[mtcars$am+1])
+plot(predict(fit_disp_wt_cyl_am),resid(fit_disp_wt_cyl_am), pch=21, col=c("salmon","blue")[mtcars$am+1])
+```
+
+As one can see in the chart the effect of adding trasmission type has very little influence on the mpg value once the displacement, cylinders and weight have been accounted for. This is reinforcedby the residuals plots given after that.
+
+##References
+
+The data used in this analysis was extracted from the 1974 Motor Trend US magazine, and comprises fuel consumption and 10 aspects of automobile design and performance for 32 automobiles (1973–74 models). This can be obtained with `?mtcars`.
